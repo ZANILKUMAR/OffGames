@@ -504,30 +504,31 @@ class AimLinePainter extends CustomPainter {
     // Draw line from start to end
     canvas.drawLine(start, end, paint);
 
-    // Draw circle at start point
+    // Draw circle at end point (where you drag to)
     canvas.drawCircle(
-      start,
+      end,
       8,
       Paint()
         ..color = AppColors.gameRed
         ..style = PaintingStyle.fill,
     );
 
-    // Draw arrowhead at end point
+    // Draw arrowhead at start point pointing in opposite direction
+    // (like pulling back a bowstring - arrow points toward target)
     final dx = end.dx - start.dx;
     final dy = end.dy - start.dy;
-    final angle = atan2(dy, dx);
+    final angle = atan2(dy, dx) + pi; // Add pi to reverse direction
     
     final arrowSize = 15.0;
     final path = Path();
-    path.moveTo(end.dx, end.dy);
+    path.moveTo(start.dx, start.dy);
     path.lineTo(
-      end.dx - arrowSize * cos(angle - 0.4),
-      end.dy - arrowSize * sin(angle - 0.4),
+      start.dx - arrowSize * cos(angle - 0.4),
+      start.dy - arrowSize * sin(angle - 0.4),
     );
     path.lineTo(
-      end.dx - arrowSize * cos(angle + 0.4),
-      end.dy - arrowSize * sin(angle + 0.4),
+      start.dx - arrowSize * cos(angle + 0.4),
+      start.dy - arrowSize * sin(angle + 0.4),
     );
     path.close();
 
