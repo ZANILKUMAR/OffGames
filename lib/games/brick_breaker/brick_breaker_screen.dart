@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -104,6 +105,7 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
         double hitPos = (ballX - paddleX) / (paddleWidth / 2);
         ballDX = hitPos * 0.02;
         HapticUtils.lightImpact(context);
+        AudioUtils.playClick(context);
       }
     }
 
@@ -111,6 +113,7 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
     if (ballY > 1) {
       lives--;
       HapticUtils.mediumImpact(context);
+      AudioUtils.playError(context);
       if (lives <= 0) {
         _gameOver();
       } else {

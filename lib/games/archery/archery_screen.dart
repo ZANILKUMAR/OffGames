@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math';
 import '../../core/providers/scores_provider.dart';
-import '../../core/providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -122,15 +122,18 @@ class _ArcheryScreenState extends State<ArcheryScreen> with SingleTickerProvider
       hits.add(ArrowHit(offsetX, offsetY, points));
     });
 
-    final settings = context.read<SettingsProvider>();
-    if (settings.isVibrationEnabled && points > 0) {
-      if (points >= 100) {
-        HapticUtils.heavyImpact(context);
-      } else if (points >= 50) {
-        HapticUtils.mediumImpact(context);
-      } else {
-        HapticUtils.lightImpact(context);
-      }
+    // Play sound and vibration based on points
+    if (points >= 100) {
+      HapticUtils.heavyImpact(context);
+      AudioUtils.playSuccess(context);
+    } else if (points >= 50) {
+      HapticUtils.mediumImpact(context);
+      AudioUtils.playScore(context);
+    } else if (points > 0) {
+      HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
+    } else {
+      AudioUtils.playError(context);
     }
 
     if (arrows == 0) {
@@ -153,7 +156,10 @@ class _ArcheryScreenState extends State<ArcheryScreen> with SingleTickerProvider
     
     if (isNewHighScore) {
       scoresProvider.updateHighScore('archery', score);
+      HapticUtils.vibratePattern(context);
     }
+    
+    AudioUtils.playGameOver(context);
 
     showDialog(
       context: context,
@@ -263,7 +269,7 @@ class _ArcheryScreenState extends State<ArcheryScreen> with SingleTickerProvider
           ),
           const SizedBox(height: 16),
           const Text(
-            'Drag from anywhere to aim\nDrag distance = Power\n\n🎯 Bullseye: 100 pts\n🎯 Inner: 50 pts\n🎯 Middle: 25 pts\n🎯 Outer: 10 pts',
+            'Drag from anywhere to aim\nDrag distance = Power\n\nBullseye: 100 pts\nInner: 50 pts\nMiddle: 25 pts\nOuter: 10 pts',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16),
           ),

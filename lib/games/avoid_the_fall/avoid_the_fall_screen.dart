@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -21,7 +22,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   int currentLane = 1;
   List<Map<String, dynamic>> platforms = [];
   double characterY = 0.2;
-  double fallingSpeed = 0.003;
+  double fallingSpeed = 0.005; // Increased from 0.003
   Timer? gameTimer;
   int score = 0;
   int highScore = 0;
@@ -56,14 +57,14 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
     currentLane = 1;
     platforms = [];
     characterY = 0.15;
-    fallingSpeed = 0.003;
+    fallingSpeed = 0.005; // Increased from 0.003
     score = 0;
     isPlaying = false;
     gameOver = false;
 
-    // Add initial platforms - only ONE lane per platform row!
-    for (int i = 0; i < 6; i++) {
-      _addPlatformAt(0.2 + i * 0.15);
+    // Add initial platforms - fewer platforms, more gaps
+    for (int i = 0; i < 5; i++) {
+      _addPlatformAt(0.25 + i * 0.18); // More spacing
     }
 
     setState(() {});
@@ -71,11 +72,11 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
 
   void _addPlatformAt(double y) {
     final random = Random();
-    // Only ONE or TWO lanes have platforms - forces player to move!
+    // Almost always ONE lane only - very hard!
     List<bool> lanePlatforms = List.generate(lanes, (_) => false);
 
-    // Pick 1-2 random lanes to have platforms
-    int numPlatforms = random.nextBool() ? 1 : 2;
+    // 90% chance of only 1 platform, 10% chance of 2
+    int numPlatforms = random.nextDouble() < 0.90 ? 1 : 2;
     List<int> availableLanes = [0, 1, 2];
     availableLanes.shuffle(random);
 
@@ -114,21 +115,22 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
         platforms.removeAt(i);
         score++;
 
-        // Increase difficulty every 10 platforms
-        if (score % 10 == 0) {
-          fallingSpeed += 0.0003;
+        // Increase difficulty every 5 platforms (faster progression)
+        if (score % 5 == 0) {
+          fallingSpeed += 0.0005; // Bigger speed increase
           HapticUtils.mediumImpact(context);
+          AudioUtils.playScore(context);
         }
       }
     }
 
     // Add new platforms from bottom when needed
-    if (platforms.isEmpty || platforms.last['y'] < 0.85) {
+    if (platforms.isEmpty || platforms.last['y'] < 0.82) { // Wider gaps
       _addPlatformAt(1.0);
     }
 
-    // Character always falls down
-    characterY += 0.004;
+    // Character falls faster
+    characterY += 0.006; // Increased from 0.004
 
     // Check if character lands on a platform
     for (var platform in platforms) {
@@ -137,8 +139,8 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
 
       // Check if current lane has a platform
       if (currentLane < platformLanes.length && platformLanes[currentLane]) {
-        // Character lands if within platform zone
-        if (characterY >= platformY - 0.02 && characterY <= platformY + 0.05) {
+        // Character lands if within platform zone - SMALLER zone = harder
+        if (characterY >= platformY - 0.015 && characterY <= platformY + 0.04) {
           // Keep character on platform surface
           characterY = platformY;
           break;
@@ -146,8 +148,8 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
       }
     }
 
-    // Game over if character falls off bottom
-    if (characterY > 0.95) {
+    // Game over if character falls off bottom OR goes above screen
+    if (characterY > 0.95 || characterY < 0) {
       _gameOver();
     }
 
@@ -157,6 +159,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   void _moveLeft() {
     if (currentLane > 0 && isPlaying) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
       setState(() {
         currentLane--;
       });
@@ -166,6 +169,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   void _moveRight() {
     if (currentLane < lanes - 1 && isPlaying) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
       setState(() {
         currentLane++;
       });
@@ -186,6 +190,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
     }
 
     HapticUtils.heavyImpact(context);
+    AudioUtils.playGameOver(context);
 
     showDialog(
       context: context,

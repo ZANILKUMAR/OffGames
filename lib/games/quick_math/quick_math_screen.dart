@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -114,6 +115,7 @@ class _QuickMathScreenState extends State<QuickMathScreen> {
 
     if (answer == correctAnswer) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playSuccess(context);
       streak++;
       maxStreak = max(maxStreak, streak);
       
@@ -129,6 +131,7 @@ class _QuickMathScreenState extends State<QuickMathScreen> {
       _generateQuestion();
     } else {
       HapticUtils.mediumImpact(context);
+      AudioUtils.playError(context);
       streak = 0;
       // Time penalty
       timeLeft = max(0, timeLeft - 3);
@@ -147,6 +150,7 @@ class _QuickMathScreenState extends State<QuickMathScreen> {
     }
 
     HapticUtils.heavyImpact(context);
+    AudioUtils.playGameOver(context);
 
     showDialog(
       context: context,
@@ -343,7 +347,7 @@ class _QuickMathScreenState extends State<QuickMathScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('🔥', style: TextStyle(fontSize: 20)),
+          Icon(Icons.local_fire_department, color: AppColors.gameOrange, size: 20),
           const SizedBox(width: 8),
           Text(
             '$streak streak!',

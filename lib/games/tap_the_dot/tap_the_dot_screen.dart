@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -93,6 +94,7 @@ class _TapTheDotScreenState extends State<TapTheDotScreen>
     if (!isPlaying) return;
     
     HapticUtils.lightImpact(context);
+    AudioUtils.playClick(context);
     setState(() {
       score++;
     });

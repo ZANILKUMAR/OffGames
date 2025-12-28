@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -83,6 +84,7 @@ class _Game2048ScreenState extends State<Game2048Screen>
 
     if (moved) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
       _addRandomTile();
       _checkGameState();
       setState(() {});
@@ -218,6 +220,7 @@ class _Game2048ScreenState extends State<Game2048Screen>
     if (!hasEmpty && !canMerge) {
       gameOver = true;
       HapticUtils.heavyImpact(context);
+      AudioUtils.playGameOver(context);
       _showGameOverDialog();
     }
   }

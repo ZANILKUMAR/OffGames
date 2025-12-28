@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -99,6 +100,7 @@ class _TowerBuilderScreenState extends State<TowerBuilderScreen>
     }
 
     HapticUtils.lightImpact(context);
+    AudioUtils.playClick(context);
 
     // Get previous block
     var prevBlock = blocks.last;
@@ -119,6 +121,7 @@ class _TowerBuilderScreenState extends State<TowerBuilderScreen>
     // Perfect placement bonus
     if ((currentBlockX - prevX).abs() < 0.02) {
       HapticUtils.mediumImpact(context);
+      AudioUtils.playSuccess(context);
       overlapWidth = prevWidth; // Keep full width for perfect placement
       overlapStart = prevX;
     }

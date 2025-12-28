@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -89,6 +90,7 @@ class _MemoryMatchScreenState extends State<MemoryMatchScreen>
     }
 
     HapticUtils.lightImpact(context);
+    AudioUtils.playClick(context);
 
     setState(() {
       revealed[index] = true;
@@ -105,6 +107,7 @@ class _MemoryMatchScreenState extends State<MemoryMatchScreen>
           matched[secondIndex!] = true;
           matches++;
           HapticUtils.mediumImpact(context);
+          AudioUtils.playSuccess(context);
           
           firstIndex = null;
           secondIndex = null;
@@ -141,6 +144,7 @@ class _MemoryMatchScreenState extends State<MemoryMatchScreen>
     }
 
     HapticUtils.heavyImpact(context);
+    AudioUtils.playGameOver(context);
     
     showDialog(
       context: context,
