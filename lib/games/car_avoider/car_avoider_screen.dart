@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -125,6 +126,7 @@ class _CarAvoiderScreenState extends State<CarAvoiderScreen> {
     }
 
     HapticUtils.heavyImpact(context);
+    AudioUtils.playGameOver(context);
 
     showDialog(
       context: context,
@@ -305,8 +307,8 @@ class _CarAvoiderScreenState extends State<CarAvoiderScreen> {
             ),
           ],
         ),
-        child: const Center(
-          child: Text('🚗', style: TextStyle(fontSize: 24)),
+        child: Center(
+          child: Icon(Icons.directions_car, color: Colors.white, size: 28),
         ),
       ),
     );
@@ -317,7 +319,6 @@ class _CarAvoiderScreenState extends State<CarAvoiderScreen> {
     double obstacleX = obstacle.lane * laneWidth + laneWidth / 2 - 18;
     double obstacleY = obstacle.y * constraints.maxHeight;
     
-    List<String> obstacleEmojis = ['🚙', '🚕', '🚌'];
     List<Color> obstacleColors = [
       AppColors.gameRed,
       AppColors.gameYellow,
@@ -342,9 +343,10 @@ class _CarAvoiderScreenState extends State<CarAvoiderScreen> {
           ],
         ),
         child: Center(
-          child: Text(
-            obstacleEmojis[obstacle.type % obstacleEmojis.length],
-            style: const TextStyle(fontSize: 20),
+          child: Icon(
+            Icons.directions_car,
+            color: Colors.white,
+            size: 24,
           ),
         ),
       ),

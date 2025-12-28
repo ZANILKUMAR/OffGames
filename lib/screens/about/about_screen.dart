@@ -25,20 +25,16 @@ class AboutScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
-              child: const Icon(
-                Icons.games_rounded,
-                size: 80,
-                color: Colors.white,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/logo.png',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -132,14 +128,14 @@ class AboutScreen extends StatelessWidget {
                   _buildContactItem(
                     context,
                     Icons.email_outlined,
-                    'support@offgames.app',
+                    'contact.aktechsource@gmail.com',
                   ),
-                  const SizedBox(height: 12),
-                  _buildContactItem(
-                    context,
-                    Icons.public_rounded,
-                    'www.offgames.app',
-                  ),
+                  // const SizedBox(height: 12),
+                  // _buildContactItem(
+                  //   context,
+                  //   Icons.public_rounded,
+                  //   'www.offgames.app',
+                  // ),
                 ],
               ),
             ),

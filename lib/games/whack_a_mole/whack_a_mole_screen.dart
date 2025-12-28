@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -108,6 +109,7 @@ class _WhackAMoleScreenState extends State<WhackAMoleScreen> {
 
     if (bombs[index]) {
       HapticUtils.heavyImpact(context);
+      AudioUtils.playError(context);
       lives--;
       bombs[index] = false;
       if (lives <= 0) {
@@ -115,6 +117,7 @@ class _WhackAMoleScreenState extends State<WhackAMoleScreen> {
       }
     } else if (moles[index]) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
       score++;
       moles[index] = false;
     }
@@ -192,7 +195,7 @@ class _WhackAMoleScreenState extends State<WhackAMoleScreen> {
         children: [
           _buildStatCard('Time', '$timeLeft s', AppColors.gameRed),
           _buildStatCard('Score', '$score', AppColors.primary),
-          _buildStatCard('Lives', '❤️ × $lives', AppColors.gamePink),
+          _buildStatCard('Lives', '$lives', AppColors.gamePink),
         ],
       ),
     );
@@ -283,10 +286,41 @@ class _WhackAMoleScreenState extends State<WhackAMoleScreen> {
   Widget _buildInstructions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-      child: Text(
-        'Tap the moles 🐹, avoid the bombs 💣',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Tap the ',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: Colors.orange[800],
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1),
+            ),
+          ),
+          Text(
+            ' moles, avoid the ',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.red, width: 1),
+            ),
+            child: Icon(Icons.warning, color: Colors.red[600], size: 12),
+          ),
+          Text(
+            ' bombs',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+        ],
       ),
     );
   }

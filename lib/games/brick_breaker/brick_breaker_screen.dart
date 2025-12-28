@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -19,13 +20,13 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
     with SingleTickerProviderStateMixin {
   static const int brickRows = 5;
   static const int brickCols = 8;
-  
+
   double paddleX = 0.5;
   double ballX = 0.5;
   double ballY = 0.7;
   double ballDX = 0.015;
   double ballDY = -0.015;
-  
+
   List<List<bool>> bricks = [];
   Timer? gameTimer;
   int score = 0;
@@ -97,12 +98,14 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
     double paddleTop = 0.85;
     double paddleWidth = 0.2;
     if (ballY >= paddleTop - 0.02 && ballY <= paddleTop + 0.02) {
-      if (ballX >= paddleX - paddleWidth / 2 && ballX <= paddleX + paddleWidth / 2) {
+      if (ballX >= paddleX - paddleWidth / 2 &&
+          ballX <= paddleX + paddleWidth / 2) {
         ballDY = -ballDY.abs();
         // Add angle based on where ball hits paddle
         double hitPos = (ballX - paddleX) / (paddleWidth / 2);
         ballDX = hitPos * 0.02;
         HapticUtils.lightImpact(context);
+        AudioUtils.playClick(context);
       }
     }
 
@@ -110,6 +113,7 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
     if (ballY > 1) {
       lives--;
       HapticUtils.mediumImpact(context);
+      AudioUtils.playError(context);
       if (lives <= 0) {
         _gameOver();
       } else {
@@ -126,21 +130,23 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
     double brickHeight = 0.04;
     double brickWidth = 1 / brickCols;
     double brickTop = 0.1;
-    
+
     for (int row = 0; row < brickRows; row++) {
       for (int col = 0; col < brickCols; col++) {
         if (!bricks[row][col]) continue;
-        
+
         double brickX = col * brickWidth;
         double brickY = brickTop + row * brickHeight;
-        
-        if (ballX >= brickX && ballX <= brickX + brickWidth &&
-            ballY >= brickY && ballY <= brickY + brickHeight) {
+
+        if (ballX >= brickX &&
+            ballX <= brickX + brickWidth &&
+            ballY >= brickY &&
+            ballY <= brickY + brickHeight) {
           bricks[row][col] = false;
           ballDY = -ballDY;
           score += 10;
           HapticUtils.lightImpact(context);
-          
+
           if (_allBricksDestroyed()) {
             _gameWon();
             return;
@@ -166,7 +172,7 @@ class _BrickBreakerScreenState extends State<BrickBreakerScreen>
     isPlaying = false;
     score += lives * 50; // Bonus for remaining lives
     _updateHighScore();
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -379,7 +385,7 @@ class BrickBreakerPainter extends CustomPainter {
     for (int row = 0; row < bricks.length; row++) {
       for (int col = 0; col < bricks[row].length; col++) {
         if (!bricks[row][col]) continue;
-        
+
         final paint = Paint()..color = brickColors[row % brickColors.length];
         final rect = RRect.fromRectAndRadius(
           Rect.fromLTWH(
@@ -399,7 +405,7 @@ class BrickBreakerPainter extends CustomPainter {
     double paddleWidth = size.width * 0.2;
     double paddleHeight = size.height * 0.02;
     double paddleTop = size.height * 0.85;
-    
+
     final paddleRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(
         paddleX * size.width - paddleWidth / 2,
@@ -412,7 +418,7 @@ class BrickBreakerPainter extends CustomPainter {
     canvas.drawRRect(paddleRect, paddlePaint);
 
     // Draw ball
-    final ballPaint = Paint()..color = Colors.white;
+    final ballPaint = Paint()..color = AppColors.gameYellow;
     canvas.drawCircle(
       Offset(ballX * size.width, ballY * size.height),
       8,

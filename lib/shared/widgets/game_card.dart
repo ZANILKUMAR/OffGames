@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class GameCard extends StatelessWidget {
+class GameCard extends StatefulWidget {
   final String title;
   final String description;
   final IconData icon;
@@ -19,54 +19,86 @@ class GameCard extends StatelessWidget {
   });
 
   @override
+  State<GameCard> createState() => _GameCardState();
+}
+
+class _GameCardState extends State<GameCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: isDark 
-                  ? Colors.black.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.08),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark 
+                ? [const Color(0xFF2A2A2A), const Color(0xFF1E1E1E)]
+                : [Colors.white, Colors.grey[50]!],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Material(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: _isHovered 
+                  ? widget.iconColor.withOpacity(0.3)
+                  : (isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08)),
+                blurRadius: _isHovered ? 20 : 15,
+                offset: Offset(0, _isHovered ? 8 : 5),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onTap,
-              splashColor: iconColor.withOpacity(0.1),
-              highlightColor: iconColor.withOpacity(0.05),
+              onTap: widget.onTap,
+              splashColor: widget.iconColor.withOpacity(0.1),
+              highlightColor: widget.iconColor.withOpacity(0.05),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(_isHovered ? 14 : 12),
                       decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.15),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            widget.iconColor.withOpacity(0.2),
+                            widget.iconColor.withOpacity(0.1),
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.iconColor.withOpacity(0.3),
+                            blurRadius: _isHovered ? 12 : 8,
+                            spreadRadius: _isHovered ? 2 : 0,
+                          ),
+                        ],
                       ),
                       child: Icon(
-                        icon,
+                        widget.icon,
                         size: 32,
-                        color: iconColor,
+                        color: widget.iconColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      title,
+                      widget.title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -76,7 +108,7 @@ class GameCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      description,
+                      widget.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isDark 
                             ? Colors.grey[400] 
@@ -86,7 +118,7 @@ class GameCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (highScore != null && highScore! > 0) ...[
+                    if (widget.highScore != null && widget.highScore! > 0) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -94,15 +126,20 @@ class GameCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: iconColor.withOpacity(0.1),
+                          gradient: LinearGradient(
+                            colors: [
+                              widget.iconColor.withOpacity(0.15),
+                              widget.iconColor.withOpacity(0.05),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '🏆 $highScore',
+                          '🏆 ${widget.highScore}',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: iconColor,
+                            color: widget.iconColor,
                           ),
                         ),
                       ),
@@ -111,6 +148,7 @@ class GameCard extends StatelessWidget {
                 ),
               ),
             ),
+          ),
           ),
         ),
       ),

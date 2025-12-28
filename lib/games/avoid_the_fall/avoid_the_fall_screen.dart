@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/scores_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/haptic_utils.dart';
+import '../../core/utils/audio_utils.dart';
 import '../../shared/widgets/game_scaffold.dart';
 import '../../shared/widgets/game_dialogs.dart';
 
@@ -17,11 +18,11 @@ class AvoidTheFallScreen extends StatefulWidget {
 
 class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   static const int lanes = 3;
-  
+
   int currentLane = 1;
   List<Map<String, dynamic>> platforms = [];
   double characterY = 0.2;
-  double fallingSpeed = 0.003;
+  double fallingSpeed = 0.005; // Increased from 0.003
   Timer? gameTimer;
   int score = 0;
   int highScore = 0;
@@ -31,7 +32,9 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   @override
   void initState() {
     super.initState();
-    _loadHighScore();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHighScore();
+    });
     _initGame();
   }
 
@@ -42,37 +45,48 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   }
 
   void _loadHighScore() {
-    highScore = context.read<ScoresProvider>().getHighScore('avoid_the_fall');
+    if (mounted) {
+      setState(() {
+        highScore =
+            context.read<ScoresProvider>().getHighScore('avoid_the_fall');
+      });
+    }
   }
 
   void _initGame() {
     currentLane = 1;
     platforms = [];
-    characterY = 0.2;
-    fallingSpeed = 0.003;
+    characterY = 0.15;
+    fallingSpeed = 0.005; // Increased from 0.003
     score = 0;
     isPlaying = false;
     gameOver = false;
 
-    // Add initial platforms
-    for (int i = 0; i < 8; i++) {
-      _addPlatform(0.3 + i * 0.12);
+    // Add initial platforms - fewer platforms, more gaps
+    for (int i = 0; i < 5; i++) {
+      _addPlatformAt(0.25 + i * 0.18); // More spacing
     }
 
     setState(() {});
   }
 
-  void _addPlatform(double y) {
+  void _addPlatformAt(double y) {
     final random = Random();
-    // Ensure at least one lane has a platform
-    List<bool> lanePlatforms = List.generate(lanes, (_) => random.nextBool());
-    if (!lanePlatforms.any((p) => p)) {
-      lanePlatforms[random.nextInt(lanes)] = true;
+    // Almost always ONE lane only - very hard!
+    List<bool> lanePlatforms = List.generate(lanes, (_) => false);
+
+    // 90% chance of only 1 platform, 10% chance of 2
+    int numPlatforms = random.nextDouble() < 0.90 ? 1 : 2;
+    List<int> availableLanes = [0, 1, 2];
+    availableLanes.shuffle(random);
+
+    for (int i = 0; i < numPlatforms; i++) {
+      lanePlatforms[availableLanes[i]] = true;
     }
-    
+
     platforms.add({
       'y': y,
-      'lanes': lanePlatforms,
+      'lanes': List<bool>.from(lanePlatforms),
     });
   }
 
@@ -92,58 +106,50 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   void _update() {
     if (!isPlaying || gameOver) return;
 
-    // Move platforms up
+    // Move all platforms UP
     for (int i = platforms.length - 1; i >= 0; i--) {
       platforms[i]['y'] -= fallingSpeed;
 
-      // Remove platforms that go off screen
-      if (platforms[i]['y'] < -0.1) {
+      // Remove platforms that go off top of screen
+      if (platforms[i]['y'] < -0.05) {
         platforms.removeAt(i);
         score++;
-        
-        // Increase difficulty
-        if (score % 10 == 0) {
-          fallingSpeed += 0.0005;
+
+        // Increase difficulty every 5 platforms (faster progression)
+        if (score % 5 == 0) {
+          fallingSpeed += 0.0005; // Bigger speed increase
           HapticUtils.mediumImpact(context);
+          AudioUtils.playScore(context);
         }
       }
     }
 
-    // Add new platforms
-    if (platforms.isEmpty || platforms.last['y'] < 0.9) {
-      _addPlatform(1.1);
+    // Add new platforms from bottom when needed
+    if (platforms.isEmpty || platforms.last['y'] < 0.82) { // Wider gaps
+      _addPlatformAt(1.0);
     }
 
-    // Check if character is on a platform
-    bool onPlatform = false;
+    // Character falls faster
+    characterY += 0.006; // Increased from 0.004
+
+    // Check if character lands on a platform
     for (var platform in platforms) {
-      double platY = platform['y'];
-      if (platY > characterY - 0.02 && platY < characterY + 0.08) {
-        if (platform['lanes'][currentLane]) {
-          onPlatform = true;
+      double platformY = platform['y'];
+      List<bool> platformLanes = List<bool>.from(platform['lanes']);
+
+      // Check if current lane has a platform
+      if (currentLane < platformLanes.length && platformLanes[currentLane]) {
+        // Character lands if within platform zone - SMALLER zone = harder
+        if (characterY >= platformY - 0.015 && characterY <= platformY + 0.04) {
+          // Keep character on platform surface
+          characterY = platformY;
           break;
         }
       }
     }
 
-    // Character falls if not on platform
-    if (!onPlatform) {
-      characterY += 0.005;
-    } else {
-      // Stay on platform level
-      for (var platform in platforms) {
-        double platY = platform['y'];
-        if (platY > characterY - 0.02 && platY < characterY + 0.08) {
-          if (platform['lanes'][currentLane]) {
-            characterY = platY - 0.02;
-            break;
-          }
-        }
-      }
-    }
-
-    // Check game over
-    if (characterY > 1) {
+    // Game over if character falls off bottom OR goes above screen
+    if (characterY > 0.95 || characterY < 0) {
       _gameOver();
     }
 
@@ -153,6 +159,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   void _moveLeft() {
     if (currentLane > 0 && isPlaying) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
       setState(() {
         currentLane--;
       });
@@ -162,6 +169,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   void _moveRight() {
     if (currentLane < lanes - 1 && isPlaying) {
       HapticUtils.lightImpact(context);
+      AudioUtils.playClick(context);
       setState(() {
         currentLane++;
       });
@@ -169,16 +177,20 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
   }
 
   void _gameOver() {
+    if (gameOver) return; // Prevent multiple game over calls
+
     gameTimer?.cancel();
     gameOver = true;
     isPlaying = false;
 
-    if (score > highScore) {
+    bool isNewHighScore = score > highScore;
+    if (isNewHighScore) {
       highScore = score;
       context.read<ScoresProvider>().updateHighScore('avoid_the_fall', score);
     }
 
     HapticUtils.heavyImpact(context);
+    AudioUtils.playGameOver(context);
 
     showDialog(
       context: context,
@@ -187,7 +199,7 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
         title: 'You Fell!',
         score: score,
         highScore: highScore,
-        isNewHighScore: score >= highScore,
+        isNewHighScore: isNewHighScore,
         onRestart: () {
           Navigator.pop(ctx);
           _initGame();
@@ -244,8 +256,12 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color)),
-          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w500, color: color)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         ],
       ),
     );
@@ -275,35 +291,28 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
             ],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+          border:
+              Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: LayoutBuilder(
             builder: (context, constraints) {
               double laneWidth = constraints.maxWidth / lanes;
+              double gameHeight = constraints.maxHeight;
 
-              return Stack(
-                children: [
-                  // Lane dividers
-                  ...List.generate(lanes - 1, (i) => Positioned(
-                    left: (i + 1) * laneWidth,
-                    top: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 1,
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  )),
-                  // Platforms
-                  ...platforms.map((platform) {
-                    List<bool> lanePlatforms = platform['lanes'];
-                    double y = platform['y'] * constraints.maxHeight;
-                    
-                    return Stack(
-                      children: List.generate(lanes, (lane) {
-                        if (!lanePlatforms[lane]) return const SizedBox.shrink();
-                        return Positioned(
+              // Build platform widgets
+              List<Widget> platformWidgets = [];
+              for (var platform in platforms) {
+                List<bool> lanePlatforms = List<bool>.from(platform['lanes']);
+                double y = (platform['y'] as double) * gameHeight;
+
+                // Only render if visible
+                if (y > -30 && y < gameHeight + 30) {
+                  for (int lane = 0; lane < lanes; lane++) {
+                    if (lanePlatforms[lane]) {
+                      platformWidgets.add(
+                        Positioned(
                           left: lane * laneWidth + 4,
                           top: y,
                           child: Container(
@@ -321,14 +330,34 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
                               ],
                             ),
                           ),
-                        );
-                      }),
-                    );
-                  }),
+                        ),
+                      );
+                    }
+                  }
+                }
+              }
+
+              return Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  // Lane dividers
+                  ...List.generate(
+                      lanes - 1,
+                      (i) => Positioned(
+                            left: (i + 1) * laneWidth - 1,
+                            top: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 2,
+                              color: Colors.white.withOpacity(0.15),
+                            ),
+                          )),
+                  // Platforms
+                  ...platformWidgets,
                   // Character
                   Positioned(
                     left: currentLane * laneWidth + laneWidth / 2 - 15,
-                    top: characterY * constraints.maxHeight - 30,
+                    top: characterY * gameHeight - 15,
                     child: Container(
                       width: 30,
                       height: 30,
@@ -360,7 +389,10 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
                         ),
                         child: const Text(
                           'Tap to Start',
-                          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -398,7 +430,8 @@ class _AvoidTheFallScreenState extends State<AvoidTheFallScreen> {
         decoration: BoxDecoration(
           color: AppColors.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+          border:
+              Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
         ),
         child: Icon(icon, color: AppColors.primary, size: 28),
       ),
